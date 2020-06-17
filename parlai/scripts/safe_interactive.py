@@ -15,7 +15,8 @@ from parlai.core.worlds import create_task
 from parlai.agents.safe_local_human.safe_local_human import SafeLocalHumanAgent
 import parlai.utils.logging as logging
 import random
-
+import time
+import numpy
 
 def setup_args(parser=None):
     if parser is None:
@@ -59,16 +60,28 @@ def safe_interactive(opt, print_parser=None):
     # Create model and assign it to the specified task
     agent = create_agent(opt, requireModelExists=True)
     if print_parser:
-        # Show arguments after loading model
+        # Show argumen}ts after loading model
         print_parser.opt = agent.opt
         print_parser.print_args()
     human_agent = SafeLocalHumanAgent(opt)
     world = create_task(opt, [human_agent, agent])
 
     # Interact until episode done
+    bot_time = []
     while True:
         world.parley()
+        
+        start_time = time.time()
         bot_act = world.get_acts()[-1]
+        elapsed_time = time.time() - start_time
+
+        #print(bot_act)
+        print("Bot response time: %.2f ms"%elapsed_time)
+
+        if bot_act['id'] == 'TransformerGenerator':
+            bot_time.append(elapsed_time)
+
+
         if 'bot_offensive' in bot_act and bot_act['bot_offensive']:
             agent.reset()
 
@@ -78,7 +91,7 @@ def safe_interactive(opt, print_parser=None):
         if world.epoch_done():
             logging.info('epoch done')
             break
-
+        print('Average bot response time: %.2f ms'% numpy.mean(bot_time))
 
 class SafeInteractive(ParlaiScript):
     @classmethod
