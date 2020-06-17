@@ -8,7 +8,8 @@ from copy import deepcopy
 
 from parlai.core.worlds import DialogPartnerWorld, validate
 from parlai.core.message import Message
-
+import time
+import numpy as np
 
 class InteractiveWorld(DialogPartnerWorld):
     """
@@ -19,10 +20,12 @@ class InteractiveWorld(DialogPartnerWorld):
     especially for those cases for given tasks.
     """
 
+
     def __init__(self, opt, agents, shared=None):
         super().__init__(opt, agents, shared)
         self.init_contexts(shared=shared)
         self.turn_cnt = 0
+        self.bot_time = []
 
     def init_contexts(self, shared=None):
         """
@@ -75,7 +78,13 @@ class InteractiveWorld(DialogPartnerWorld):
             )
             agents[1].observe(validate(context_act))
         agents[1].observe(validate(act))
+        
+        start_time = time.time()
         acts[1] = agents[1].act()
+        elapsed_time = time.time() - start_time
+        self.bot_time.append(elapsed_time)
+        print("Response time: %.2f s Average: %.2f s" %(elapsed_time, np.mean(self.bot_time)))
+
         agents[0].observe(validate(acts[1]))
         self.update_counters()
         self.turn_cnt += 1
